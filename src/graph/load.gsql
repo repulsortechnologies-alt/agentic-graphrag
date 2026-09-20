@@ -1,0 +1,30 @@
+USE GRAPH olympics
+DROP JOB load_all
+
+CREATE LOADING JOB load_all FOR GRAPH olympics {
+  DEFINE FILENAME f_event;
+  DEFINE FILENAME f_medals;
+  DEFINE FILENAME f_venue;
+  DEFINE FILENAME f_games;
+  DEFINE FILENAME f_sport;
+
+  LOAD f_event TO VERTEX Event VALUES($"qid",$"title",$"url",$"sport",$"event",
+      $"year",$"season",$"venue",$"date_iso",$"competitors",$"nations") USING HEADER="true", SEPARATOR=",";
+
+  LOAD f_medals TO VERTEX Athlete VALUES($"athlete") USING HEADER="true", SEPARATOR=",";
+  LOAD f_medals TO TEMP_TABLE t (qid,athlete,medal) VALUES($"qid",$"athlete",$"medal") USING HEADER="true", SEPARATOR=",";
+  LOAD f_venue  TO VERTEX Venue VALUES($"venue") USING HEADER="true", SEPARATOR=",";
+  LOAD f_venue  TO EDGE held_at VALUES($"qid",$"venue") USING HEADER="true", SEPARATOR=",";
+  LOAD f_games  TO VERTEX Games VALUES($"games",$"year",$"season") USING HEADER="true", SEPARATOR=",";
+  LOAD f_games  TO EDGE part_of VALUES($"qid",$"games") USING HEADER="true", SEPARATOR=",";
+  LOAD f_sport  TO VERTEX Sport VALUES($"sport") USING HEADER="true", SEPARATOR=",";
+  LOAD f_sport  TO EDGE in_sport VALUES($"qid",$"sport") USING HEADER="true", SEPARATOR=",";
+}
+
+// medal edges from temp table (split by medal type)
+CREATE LOADING JOB load_medals FOR GRAPH olympics {
+  DEFINE FILENAME f_medals;
+  LOAD f_medals TO EDGE won_gold   VALUES($"qid",$"athlete") WHERE $"medal"=="gold"   USING HEADER="true", SEPARATOR=",";
+  LOAD f_medals TO EDGE won_silver VALUES($"qid",$"athlete") WHERE $"medal"=="silver" USING HEADER="true", SEPARATOR=",";
+  LOAD f_medals TO EDGE won_bronze VALUES($"qid",$"athlete") WHERE $"medal"=="bronze" USING HEADER="true", SEPARATOR=",";
+}

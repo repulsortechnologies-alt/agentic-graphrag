@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.env
+.llmcache/
+*.tfidf.pkl
+data/results/
+# keep generated event data OUT of ignore (needed to run offline):
+!data/events.jsonl

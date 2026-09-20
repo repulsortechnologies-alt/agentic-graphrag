@@ -1,0 +1,24 @@
+// ---- Agentic GraphRAG :: Olympic events schema ----
+CREATE VERTEX Event (
+  PRIMARY_ID qid STRING,
+  title STRING, url STRING, sport STRING, event STRING,
+  year INT, season STRING, venue STRING,
+  date_iso STRING, competitors INT, nations INT
+) WITH primary_id_as_attribute="true"
+
+CREATE VERTEX Athlete (PRIMARY_ID name STRING) WITH primary_id_as_attribute="true"
+CREATE VERTEX Venue   (PRIMARY_ID name STRING) WITH primary_id_as_attribute="true"
+CREATE VERTEX Games   (PRIMARY_ID gid STRING, year INT, season STRING) WITH primary_id_as_attribute="true"
+CREATE VERTEX Sport   (PRIMARY_ID name STRING) WITH primary_id_as_attribute="true"
+CREATE VERTEX Doc     (PRIMARY_ID doc_id STRING, title STRING, text STRING) WITH primary_id_as_attribute="true"
+
+CREATE DIRECTED EDGE won_gold   (FROM Event, TO Athlete) WITH REVERSE_EDGE="gold_by"
+CREATE DIRECTED EDGE won_silver (FROM Event, TO Athlete) WITH REVERSE_EDGE="silver_by"
+CREATE DIRECTED EDGE won_bronze (FROM Event, TO Athlete) WITH REVERSE_EDGE="bronze_by"
+CREATE DIRECTED EDGE held_at    (FROM Event, TO Venue)   WITH REVERSE_EDGE="hosted"
+CREATE DIRECTED EDGE part_of    (FROM Event, TO Games)   WITH REVERSE_EDGE="has_event"
+CREATE DIRECTED EDGE in_sport   (FROM Event, TO Sport)   WITH REVERSE_EDGE="sport_of"
+CREATE DIRECTED EDGE described_by (FROM Event, TO Doc)   WITH REVERSE_EDGE="describes"
+
+CREATE GRAPH olympics (Event, Athlete, Venue, Games, Sport, Doc,
+  won_gold, won_silver, won_bronze, held_at, part_of, in_sport, described_by)
