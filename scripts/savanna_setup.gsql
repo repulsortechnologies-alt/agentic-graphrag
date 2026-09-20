@@ -1,0 +1,92 @@
+// ---- Agentic GraphRAG :: Olympic events schema ----
+CREATE VERTEX Event (
+  PRIMARY_ID qid STRING,
+  title STRING, url STRING, sport STRING, event STRING,
+  year INT, season STRING, venue STRING,
+  date_iso STRING, competitors INT, nations INT
+) WITH primary_id_as_attribute="true"
+
+CREATE VERTEX Athlete (PRIMARY_ID name STRING) WITH primary_id_as_attribute="true"
+CREATE VERTEX Venue   (PRIMARY_ID name STRING) WITH primary_id_as_attribute="true"
+CREATE VERTEX Games   (PRIMARY_ID gid STRING, year INT, season STRING) WITH primary_id_as_attribute="true"
+CREATE VERTEX Sport   (PRIMARY_ID name STRING) WITH primary_id_as_attribute="true"
+CREATE VERTEX Doc     (PRIMARY_ID doc_id STRING, title STRING, text STRING) WITH primary_id_as_attribute="true"
+
+CREATE DIRECTED EDGE won_gold   (FROM Event, TO Athlete) WITH REVERSE_EDGE="gold_by"
+CREATE DIRECTED EDGE won_silver (FROM Event, TO Athlete) WITH REVERSE_EDGE="silver_by"
+CREATE DIRECTED EDGE won_bronze (FROM Event, TO Athlete) WITH REVERSE_EDGE="bronze_by"
+CREATE DIRECTED EDGE held_at    (FROM Event, TO Venue)   WITH REVERSE_EDGE="hosted"
+CREATE DIRECTED EDGE part_of    (FROM Event, TO Games)   WITH REVERSE_EDGE="has_event"
+CREATE DIRECTED EDGE in_sport   (FROM Event, TO Sport)   WITH REVERSE_EDGE="sport_of"
+CREATE DIRECTED EDGE described_by (FROM Event, TO Doc)   WITH REVERSE_EDGE="describes"
+
+CREATE GRAPH olympics (Event, Athlete, Venue, Games, Sport, Doc,
+  won_gold, won_silver, won_bronze, held_at, part_of, in_sport, described_by)
+
+USE GRAPH olympics
+
+// findEvents: the workhorse. Structured filters -> events. Powers all qtypes.
+CREATE OR REPLACE QUERY findEvents(STRING sport, INT year, STRING season, STRING venue,
+    STRING date_iso, INT min_competitors, INT max_competitors, INT min_nations,
+    STRING event_contains) FOR GRAPH olympics {
+  SetAccum<VERTEX<Event>> @@seed;
+  R = SELECT e FROM Event:e
+      WHERE (sport=="" OR lower(e.sport)==lower(sport))
+        AND (year==0 OR e.year==year)
+        AND (season=="" OR e.season==season)
+        AND (venue=="" OR e.venue LIKE ("%"+venue+"%"))
+        AND (date_iso=="" OR e.date_iso==date_iso)
+        AND (min_competitors==0 OR e.competitors > min_competitors)
+        AND (max_competitors==0 OR e.competitors < max_competitors)
+        AND (min_nations==0 OR e.nations > min_nations)
+        AND (event_contains=="" OR lower(e.event) LIKE ("%"+lower(event_contains)+"%"));
+  PRINT R AS events;
+}
+
+// getEvent by qid
+CREATE OR REPLACE QUERY getEvent(STRING qid) FOR GRAPH olympics {
+  R = SELECT e FROM Event:e WHERE e.qid==qid;
+  PRINT R AS event;
+}
+
+// listSports
+CREATE OR REPLACE QUERY listSports() FOR GRAPH olympics {
+  ListAccum<STRING> @@s;
+  R = SELECT sp FROM Sport:sp ACCUM @@s += sp.name;
+  PRINT @@s AS sports;
+}
+
+// gamesYears (optionally by season)
+CREATE OR REPLACE QUERY gamesYears(STRING season) FOR GRAPH olympics {
+  SetAccum<INT> @@yrs;
+  R = SELECT g FROM Games:g WHERE (season=="" OR g.season==season) ACCUM @@yrs += g.year;
+  PRINT @@yrs AS years;
+}
+
+// aggregateCount: server-side count (efficiency: no rows shipped to client)
+CREATE OR REPLACE QUERY aggregateCount(STRING sport, INT year, STRING season, INT min_competitors)
+  FOR GRAPH olympics {
+  SumAccum<INT> @@n;
+  R = SELECT e FROM Event:e
+      WHERE lower(e.sport)==lower(sport) AND e.year==year AND e.season==season
+        AND e.competitors > min_competitors
+      ACCUM @@n += 1;
+  PRINT @@n AS count;
+}
+
+// superlative: event with max/min competitors in a sport-year
+CREATE OR REPLACE QUERY superlativeEvent(STRING sport, INT year, STRING season, STRING mode)
+  FOR GRAPH olympics {
+  MaxAccum<INT> @@mx; MinAccum<INT> @@mn;
+  R = SELECT e FROM Event:e
+      WHERE lower(e.sport)==lower(sport) AND e.year==year AND e.season==season
+      ACCUM @@mx += e.competitors, @@mn += e.competitors;
+  Best = SELECT e FROM Event:e
+      WHERE lower(e.sport)==lower(sport) AND e.year==year AND e.season==season
+        AND ((mode=="max" AND e.competitors==@@mx) OR (mode=="min" AND e.competitors==@@mn));
+  PRINT Best AS events;
+}
+
+// installQueries note: after CREATE, run  INSTALL QUERY ALL
+
+INSTALL QUERY ALL
