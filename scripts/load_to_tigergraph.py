@@ -11,11 +11,17 @@ Standard library only — no pip install needed. Run in your native macOS termin
 """
 import os, sys, json, ssl, time, urllib.request, urllib.parse
 
-HOST = os.environ.get("TG_HOST", "").rstrip("/")
+DEFAULT_HOST = "https://tg-b4c6211c-1b8c-4d36-bdf9-0cabf1683605.tg-2635877100.i.tgcloud.io"
+HOST = (os.environ.get("TG_HOST") or DEFAULT_HOST).rstrip("/")
 GRAPH = os.environ.get("TG_GRAPH", "olympics")
 SECRET = os.environ.get("TG_SECRET", "")
-if not HOST or not SECRET:
-    print("set TG_HOST and TG_SECRET first"); sys.exit(1)
+if not SECRET:
+    try:
+        SECRET = input("Paste your Database Secret (from Savanna > Database Secrets) and press Enter:\n").strip()
+    except EOFError:
+        SECRET = ""
+if not SECRET:
+    print("no secret provided; create one in Savanna > Database Secrets, then rerun."); sys.exit(1)
 if HOST.startswith("https://") and ":443" not in HOST:
     HOST = HOST + ":443"
 
