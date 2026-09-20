@@ -1,15 +1,12 @@
 #!/usr/bin/env python3
-"""Load Olympic events into TigerGraph Savanna via REST, then verify.
-Standard library only — no pip install needed. Run in your native macOS terminal
-(it reaches Savanna). Keep events.jsonl in the SAME folder as this script.
+"""Load Olympic events into TigerGraph Savanna, then verify.
+Uses macOS `curl` for HTTP (robust TLS) — no pip, no Python SSL issues.
+Keep events.jsonl in the SAME folder as this script. Run:
 
   cd ~/Downloads
-  export TG_HOST=https://tg-b4c6211c-1b8c-4d36-bdf9-0cabf1683605.tg-2635877100.i.tgcloud.io
-  export TG_SECRET=<paste the secret you made in Database Secrets>
-  export TG_GRAPH=olympics
-  python3 load_to_tigergraph.py
+  python3 load_to_tigergraph.py      # it will prompt for your Database Secret
 """
-import os, sys, json, ssl, time, urllib.request, urllib.parse
+import os, sys, json, time, subprocess, tempfile
 
 DEFAULT_HOST = "https://tg-b4c6211c-1b8c-4d36-bdf9-0cabf1683605.tg-2635877100.i.tgcloud.io"
 HOST = (os.environ.get("TG_HOST") or DEFAULT_HOST).rstrip("/")
@@ -17,7 +14,7 @@ GRAPH = os.environ.get("TG_GRAPH", "olympics")
 SECRET = os.environ.get("TG_SECRET", "")
 if not SECRET:
     try:
-        SECRET = input("Paste your Database Secret (from Savanna > Database Secrets) and press Enter:\n").strip()
+        SECRET = input("Paste your Database Secret and press Enter:\n").strip()
     except EOFError:
         SECRET = ""
 if not SECRET:
@@ -32,27 +29,33 @@ if not os.path.exists(DATA):
 events = [json.loads(l) for l in open(DATA)]
 print(f"loaded {len(events)} events")
 
-CTX = ssl.create_default_context()
+def curl(method, path, body=None, token=None):
+    """Call curl; return parsed JSON (or raise with stderr)."""
+    args = ["curl", "-sS", "--tlsv1.2", "-X", method, HOST + path]
+    if token:
+        args += ["-H", f"Authorization: Bearer {token}"]
+    tmp = None
+    if body is not None:
+        args += ["-H", "Content-Type: application/json"]
+        tmp = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False)
+        json.dump(body, tmp); tmp.close()
+        args += ["--data-binary", "@" + tmp.name]
+    try:
+        out = subprocess.run(args, capture_output=True, text=True, timeout=90)
+    finally:
+        if tmp: os.unlink(tmp.name)
+    if out.returncode != 0:
+        raise RuntimeError(f"curl failed ({out.returncode}): {out.stderr.strip()[:200]}")
+    try:
+        return json.loads(out.stdout)
+    except json.JSONDecodeError:
+        raise RuntimeError(f"non-JSON response: {out.stdout[:200]}")
 
-def post(path, obj, headers=None):
-    data = json.dumps(obj).encode()
-    req = urllib.request.Request(HOST + path, data=data, method="POST",
-                                 headers={"Content-Type": "application/json", **(headers or {})})
-    with urllib.request.urlopen(req, timeout=60, context=CTX) as r:
-        return json.loads(r.read().decode())
-
-def get(path, params, headers=None):
-    q = urllib.parse.urlencode(params)
-    req = urllib.request.Request(f"{HOST}{path}?{q}", headers=headers or {})
-    with urllib.request.urlopen(req, timeout=60, context=CTX) as r:
-        return json.loads(r.read().decode())
-
-# 1. mint RESTPP token from the secret
-tokres = post("/restpp/requesttoken", {"secret": SECRET, "lifetime": "2592000"})
+# 1. mint RESTPP token
+tokres = curl("POST", "/restpp/requesttoken", {"secret": SECRET, "lifetime": "2592000"})
 TOKEN = tokres.get("token") or tokres.get("results", {}).get("token")
 if not TOKEN:
     print("token mint failed:", tokres); sys.exit(2)
-H = {"Authorization": f"Bearer {TOKEN}"}
 print("token ok")
 
 def vattr(e):
@@ -68,16 +71,16 @@ for i in range(0, len(events), BATCH):
     chunk = events[i:i+BATCH]
     payload = {"vertices": {"Event": {e["qid"]: vattr(e) for e in chunk}}}
     try:
-        post(f"/restpp/graph/{GRAPH}", payload, H)
+        curl("POST", f"/restpp/graph/{GRAPH}", payload, TOKEN)
     except Exception as ex:
         print("upsert error:", ex); sys.exit(3)
     total += len(chunk); print(f"  upserted {total}/{len(events)}"); time.sleep(0.1)
 print("data load complete")
 
 # 3. verify: biathlon 2018 Winter, >73 competitors -> expect 5
-res = get(f"/restpp/query/{GRAPH}/findEvents",
-          {"sport": "Biathlon", "year": 2018, "season": "Winter", "min_competitors": 73}, H)
+res = curl("GET", f"/restpp/query/{GRAPH}/findEvents?sport=Biathlon&year=2018&season=Winter&min_competitors=73",
+           None, TOKEN)
 r = res.get("results", [])
 n = len(r[0].get("events", [])) if r else 0
 print(f"VERIFY findEvents(biathlon 2018 >73) = {n} (expect 5) -> {'PASS' if n == 5 else 'CHECK'}")
-print("\nGraph is loaded. If PASS, your TigerGraph backend is fully wired.")
+print("\nGraph loaded. If PASS, your TigerGraph backend is fully wired.")
