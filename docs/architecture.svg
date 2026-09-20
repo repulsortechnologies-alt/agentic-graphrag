@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" viewBox="0 0 680 620" font-family="sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#666" stroke-width="1.5"/></marker></defs>
+<style>.b{stroke-width:.5}.t{font-size:14px;font-weight:500}.s{font-size:12px;fill:#555}text{text-anchor:middle}</style>
+<rect x="270" y="24" width="140" height="40" rx="8" fill="#F1EFE8" stroke="#5F5E5A" class="b"/><text class="t" x="340" y="48">Question</text>
+<line x1="340" y1="64" x2="340" y2="88" stroke="#666" marker-end="url(#a)"/>
+<rect x="230" y="88" width="220" height="52" rx="8" fill="#EEEDFE" stroke="#534AB7" class="b"/><text class="t" x="340" y="110">Planner</text><text class="s" x="340" y="128">NL to plan {qtype, op, params}</text>
+<rect x="40" y="176" width="180" height="70" rx="8" fill="#FCEBEB" stroke="#A32D2D" class="b"/><text class="t" x="130" y="200">RAG</text><text class="s" x="130" y="218">retrieve top-k, read</text><text class="s" x="130" y="234">18% · 157k tok</text>
+<rect x="250" y="176" width="180" height="70" rx="8" fill="#E6F1FB" stroke="#185FA5" class="b"/><text class="t" x="340" y="200">GraphRAG</text><text class="s" x="340" y="218">plan, graph compute</text><text class="s" x="340" y="234">92% · 25k tok</text>
+<rect x="460" y="176" width="180" height="70" rx="8" fill="#E1F5EE" stroke="#0F6E56" class="b"/><text class="t" x="550" y="200">Agentic</text><text class="s" x="550" y="218">investigate loop</text><text class="s" x="550" y="234">100% · 130k tok</text>
+<rect x="60" y="286" width="560" height="230" rx="14" fill="#E1F5EE" stroke="#0F6E56" class="b"/><text class="t" x="340" y="310">Agentic orchestrator loop</text>
+<rect x="86" y="330" width="150" height="54" rx="8" fill="#EEEDFE" stroke="#534AB7" class="b"/><text class="t" x="161" y="352">1 plan</text><text class="s" x="161" y="370">decompose</text>
+<rect x="265" y="330" width="150" height="54" rx="8" fill="#E6F1FB" stroke="#185FA5" class="b"/><text class="t" x="340" y="352">2 graph execute</text><text class="s" x="340" y="370">count / max / join</text>
+<rect x="444" y="330" width="150" height="54" rx="8" fill="#FAEEDA" stroke="#854F0B" class="b"/><text class="t" x="519" y="352">2b refine</text><text class="s" x="519" y="370">venue+date tie</text>
+<rect x="86" y="404" width="150" height="54" rx="8" fill="#F1EFE8" stroke="#5F5E5A" class="b"/><text class="t" x="161" y="426">3 judge</text><text class="s" x="161" y="444">evidence enough?</text>
+<rect x="265" y="404" width="150" height="54" rx="8" fill="#FAECE7" stroke="#993C1D" class="b"/><text class="t" x="340" y="426">4 self-correct</text><text class="s" x="340" y="444">relax / re-match</text>
+<rect x="444" y="404" width="150" height="54" rx="8" fill="#EAF3DE" stroke="#3B6D11" class="b"/><text class="t" x="519" y="426">5 verify</text><text class="s" x="519" y="444">cross-source</text>
+<rect x="265" y="472" width="150" height="34" rx="8" fill="#E1F5EE" stroke="#0F6E56" class="b"/><text class="t" x="340" y="493">6 stop (confidence)</text>
+<rect x="140" y="540" width="400" height="56" rx="10" fill="#F1EFE8" stroke="#5F5E5A" class="b"/><text class="t" x="340" y="563">Graph backend</text><text class="s" x="340" y="581">local (offline) · TigerGraph Savanna (RESTPP)</text>
+<line x1="340" y1="516" x2="340" y2="540" stroke="#666" marker-end="url(#a)"/>
+</svg>
