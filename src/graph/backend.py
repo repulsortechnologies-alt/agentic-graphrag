@@ -80,8 +80,9 @@ class TigerGraphBackend(GraphBackend):
             self.token = self._mint_token()
 
     def _mint_token(self):
-        r = self._c.post(f"{self.host}/restpp/requesttoken",
-                         json={"secret": self._secret, "lifetime": 86400})
+        # TigerGraph 4.x (Savanna) mints JWTs at /gsql/v1/tokens
+        r = self._c.post(f"{self.host}/gsql/v1/tokens",
+                         json={"secret": self._secret, "lifetime": 2592000})
         return r.json().get("token")
 
     def _run(self, endpoint, params):
@@ -90,8 +91,15 @@ class TigerGraphBackend(GraphBackend):
         r.raise_for_status()
         return r.json().get("results", [])
 
+    # installed queries need EVERY param supplied; unfilled ones use these no-op defaults
+    _FIND_DEFAULTS = {"sport": "", "year": 0, "season": "", "venue": "", "date_iso": "",
+                      "min_competitors": 0, "max_competitors": 0, "min_nations": 0, "event_contains": ""}
+
     def find_events(self, **kw):
-        params = {k:v for k,v in kw.items() if v is not None}
+        params = dict(self._FIND_DEFAULTS)
+        for k, v in kw.items():
+            if v is not None and k in params:
+                params[k] = v
         res = self._run("findEvents", params)
         return res[0].get("events", res[0]) if res else []
     def get_event(self, qid):
