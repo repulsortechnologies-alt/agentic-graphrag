@@ -1,0 +1,42 @@
+// ===== Deployed TigerGraph Savanna setup (olympics graph) =====
+// Run in GraphStudio > Query Editor. Creates the graph, schema, and query
+// endpoints the Python backend calls. Data is loaded separately via
+// scripts/load_to_tigergraph.py (REST upsert).
+USE GLOBAL
+CREATE VERTEX Event (PRIMARY_ID qid STRING, title STRING, url STRING, sport STRING,
+  event STRING, year INT, season STRING, venue STRING, date_iso STRING,
+  competitors INT, nations INT, gold STRING, silver STRING, bronze STRING, goldNOC STRING)
+  WITH primary_id_as_attribute="true"
+CREATE GRAPH olympics (Event)
+USE GRAPH olympics
+
+CREATE OR REPLACE QUERY findEvents(STRING sport, INT year, STRING season, STRING venue,
+    STRING date_iso, INT min_competitors, INT max_competitors, INT min_nations,
+    STRING event_contains) FOR GRAPH olympics {
+  R = SELECT e FROM Event:e
+      WHERE (sport=="" OR lower(e.sport)==lower(sport))
+        AND (year==0 OR e.year==year)
+        AND (season=="" OR e.season==season)
+        AND (venue=="" OR lower(e.venue) LIKE ("%"+lower(venue)+"%"))
+        AND (date_iso=="" OR e.date_iso==date_iso)
+        AND (min_competitors==0 OR e.competitors > min_competitors)
+        AND (max_competitors==0 OR e.competitors < max_competitors)
+        AND (min_nations==0 OR e.nations > min_nations)
+        AND (event_contains=="" OR lower(e.event) LIKE ("%"+lower(event_contains)+"%"));
+  PRINT R AS events;
+}
+CREATE OR REPLACE QUERY getEvent(STRING qid) FOR GRAPH olympics {
+  R = SELECT e FROM Event:e WHERE e.qid==qid;
+  PRINT R AS event;
+}
+CREATE OR REPLACE QUERY listSports() FOR GRAPH olympics {
+  SetAccum<STRING> @@s;
+  R = SELECT e FROM Event:e ACCUM @@s += e.sport;
+  PRINT @@s AS sports;
+}
+CREATE OR REPLACE QUERY gamesYears(STRING season) FOR GRAPH olympics {
+  SetAccum<INT> @@y;
+  R = SELECT e FROM Event:e WHERE (season=="" OR e.season==season) ACCUM @@y += e.year;
+  PRINT @@y AS years;
+}
+INSTALL QUERY ALL

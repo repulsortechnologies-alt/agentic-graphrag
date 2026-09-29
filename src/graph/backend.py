@@ -85,6 +85,14 @@ class TigerGraphBackend(GraphBackend):
                          json={"secret": self._secret, "lifetime": 2592000})
         return r.json().get("token")
 
+    @staticmethod
+    def _flat(v):
+        """TigerGraph returns {v_id, v_type, attributes:{...}}; flatten to the
+        plain dict the executor expects, keying the primary id as 'qid'."""
+        a = dict(v.get("attributes", v))
+        a.setdefault("qid", v.get("v_id"))
+        return a
+
     def _run(self, endpoint, params):
         h = {"Authorization": f"Bearer {self.token}"} if self.token else {}
         r = self._c.get(f"{self.host}/restpp/query/{self.graph}/{endpoint}", params=params, headers=h)
@@ -101,10 +109,12 @@ class TigerGraphBackend(GraphBackend):
             if v is not None and k in params:
                 params[k] = v
         res = self._run("findEvents", params)
-        return res[0].get("events", res[0]) if res else []
+        rows = res[0].get("events", []) if res else []
+        return [self._flat(v) for v in rows]
     def get_event(self, qid):
         res = self._run("getEvent", {"qid": qid})
-        return (res[0].get("event") or [None])[0] if res else None
+        rows = res[0].get("event", []) if res else []
+        return self._flat(rows[0]) if rows else None
     def sports(self):
         res = self._run("listSports", {}); return res[0].get("sports", []) if res else []
     def games_years(self, season=None):

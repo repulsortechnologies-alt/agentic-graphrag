@@ -77,6 +77,7 @@ Set `GEMINI_API_KEY` (free tier) to use the LLM planner/reader; otherwise the sy
 runs fully deterministic (heuristic planner + infobox reader) and still scores as above.
 
 ## TigerGraph Savanna setup
+Verified end-to-end — full runbook + gotchas in [docs/TIGERGRAPH.md](docs/TIGERGRAPH.md). Quick version below.
 1. Sign up at tgcloud.io, redeem hackathon credits, create a workspace (port 443).
 2. Admin Portal → User Management → generate a **secret**.
 3. Load schema + data:
