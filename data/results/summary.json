@@ -1,0 +1,35 @@
+{
+ "rag": {
+  "accuracy": 18.0,
+  "tokens": 157342,
+  "by_type": {
+   "lookup": 36.8,
+   "multi_hop": 32.1,
+   "temporal": 9.1,
+   "aggregation": 0.0,
+   "superlative": 0.0
+  }
+ },
+ "graphrag": {
+  "accuracy": 92.0,
+  "tokens": 24669,
+  "by_type": {
+   "lookup": 100.0,
+   "multi_hop": 71.4,
+   "temporal": 100.0,
+   "aggregation": 100.0,
+   "superlative": 100.0
+  }
+ },
+ "agentic": {
+  "accuracy": 100.0,
+  "tokens": 129540,
+  "by_type": {
+   "lookup": 100.0,
+   "multi_hop": 100.0,
+   "temporal": 100.0,
+   "aggregation": 100.0,
+   "superlative": 100.0
+  }
+ }
+}
