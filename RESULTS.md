@@ -15,7 +15,10 @@
 Raw per-question output: [`data/results/benchmark.json`](data/results/benchmark.json)
 Machine summary: [`data/results/summary.json`](data/results/summary.json)
 
-## Hidden set — 50 questions (no gold; predictions submitted)
+## Hidden set — 50 questions
+
+**Evaluation file (answers + tokens + agentic trace):** [`data/results/hidden_50_results.json`](data/results/hidden_50_results.json) · CSV: [`hidden_50_results.csv`](data/results/hidden_50_results.csv)
+ (no gold; predictions submitted)
 
 Predictions produced by the Agentic pipeline for all 50 hidden questions:
 [`data/results/answers_hidden.jsonl`](data/results/answers_hidden.jsonl)
